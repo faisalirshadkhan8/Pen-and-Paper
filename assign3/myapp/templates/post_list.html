@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Posts{% endblock %}
+{% block content %}
+<div class="container">
+  <form class="row g-2 mb-4" method="get">
+    <div class="col-md-4">
+      <input name="q" value="{{ current_q }}" class="form-control" placeholder="Search title or content" />
+    </div>
+    <div class="col-md-3">
+      <select name="category" class="form-select">
+        <option value="">All Categories</option>
+        {% for c in categories %}
+          <option value="{{ c.slug }}" {% if c.slug == current_category %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="tag" class="form-select">
+        <option value="">All Tags</option>
+        {% for t in tags %}
+          <option value="{{ t.slug }}" {% if t.slug == current_tag %}selected{% endif %}>{{ t.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-primary w-100">Filter</button>
+    </div>
+  </form>
+
+  {% for post in posts %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title"><a href="{{ post.get_absolute_url }}">{{ post.title }}</a></h5>
+        {% if post.category %}<span class="badge bg-secondary">{{ post.category.name }}</span>{% endif %}
+        {% for tg in post.tags.all %}<span class="badge bg-info text-dark">{{ tg.name }}</span>{% endfor %}
+        <p class="text-muted mb-2">By {{ post.author.username }} | {{ post.published_at|date:"M d, Y" }}</p>
+        <p class="card-text">{{ post.content|truncatechars:180 }}</p>
+      </div>
+    </div>
+  {% empty %}
+    <p>No posts found.</p>
+  {% endfor %}
+
+  {% if is_paginated %}
+  <nav aria-label="Page navigation">
+    <ul class="pagination">
+      {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?{% if current_q %}q={{ current_q }}&{% endif %}{% if current_category %}category={{ current_category }}&{% endif %}{% if current_tag %}tag={{ current_tag }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?{% if current_q %}q={{ current_q }}&{% endif %}{% if current_category %}category={{ current_category }}&{% endif %}{% if current_tag %}tag={{ current_tag }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

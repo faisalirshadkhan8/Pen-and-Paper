@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Sign Up - Blog Platform{% endblock %}
+{% block content %}
+<div class="hero-section text-center">
+  <div class="container">
+    <h1 class="display-4 fw-bold mb-3">
+      <i class="bi bi-journal-text"></i> Welcome to Blog Platform
+    </h1>
+    <p class="lead">Create your account and start sharing your stories with the world</p>
+  </div>
+</div>
+
+<div class="container my-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      <div class="card shadow-lg border-0">
+        <div class="card-body p-5">
+          <h2 class="card-title text-center mb-4">Create Account</h2>
+          
+          <form method="post" novalidate>
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+              </div>
+            {% endif %}
+
+            <div class="mb-3">
+              <label for="id_username" class="form-label">
+                <i class="bi bi-person"></i> Username
+              </label>
+              <input type="text" name="username" class="form-control form-control-lg" id="id_username" 
+                     placeholder="Choose a username" required autofocus>
+              {% if form.username.errors %}
+                {% for error in form.username.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label for="id_email" class="form-label">
+                <i class="bi bi-envelope"></i> Email Address
+              </label>
+              <input type="email" name="email" class="form-control form-control-lg" id="id_email" 
+                     placeholder="your@email.com" required>
+              {% if form.email.errors %}
+                {% for error in form.email.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label for="id_password1" class="form-label">
+                <i class="bi bi-lock"></i> Password
+              </label>
+              <input type="password" name="password1" class="form-control form-control-lg" id="id_password1" 
+                     placeholder="Create a strong password" required>
+              <div class="form-text">At least 8 characters, not entirely numeric</div>
+              {% if form.password1.errors %}
+                {% for error in form.password1.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              {% endif %}
+            </div>
+
+            <div class="mb-4">
+              <label for="id_password2" class="form-label">
+                <i class="bi bi-lock-fill"></i> Confirm Password
+              </label>
+              <input type="password" name="password2" class="form-control form-control-lg" id="id_password2" 
+                     placeholder="Re-enter your password" required>
+              {% if form.password2.errors %}
+                {% for error in form.password2.errors %}
+                  <div class="text-danger small mt-1">{{ error }}</div>
+                {% endfor %}
+              {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
+              <i class="bi bi-person-plus"></i> Create Account
+            </button>
+          </form>
+
+          <hr>
+          
+          <p class="text-center text-muted mb-0">
+            Already have an account? 
+            <a href="{% url 'login' %}" class="text-decoration-none fw-bold">Login here</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -15,12 +15,27 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import RedirectView
+from django.contrib.auth.decorators import login_required
+
+# Root redirect: authenticated → /home/, unauthenticated → /accounts/signup/
+class SmartRedirectView(RedirectView):
+    permanent = False
+    
+    def get_redirect_url(self, *args, **kwargs):
+        if self.request.user.is_authenticated:
+            return '/home/'
+        return '/accounts/signup/'
 
 urlpatterns = [
+    path('', SmartRedirectView.as_view(), name='root'),
     path('admin/', admin.site.urls),
+    path('accounts/', include('accounts.urls')),
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('', include('myapp.urls')),
 ]
 
 if settings.DEBUG:

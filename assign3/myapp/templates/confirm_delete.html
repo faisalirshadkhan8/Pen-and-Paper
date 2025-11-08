@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Delete Post - {{ post.title }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card border-danger">
+      <div class="card-header bg-danger text-white">
+        <h5 class="mb-0">Confirm Delete</h5>
+      </div>
+      <div class="card-body">
+        <h4 class="mb-3">Are you sure you want to delete this post?</h4>
+        
+        <div class="alert alert-warning">
+          <strong>Warning:</strong> This action cannot be undone. All comments on this post will also be deleted.
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5 class="card-title">{{ post.title }}</h5>
+            <p class="text-muted mb-2">
+              By {{ post.author.username }} | 
+              {% if post.published_at %}{{ post.published_at|date:"M d, Y" }}{% else %}Draft{% endif %}
+            </p>
+            {% if post.image %}
+              <img src="{{ post.image.url }}" alt="{{ post.title }}" class="img-thumbnail mb-2" style="max-height: 200px;" />
+            {% endif %}
+            <p class="card-text">{{ post.content|truncatewords:50 }}</p>
+            <div>
+              {% if post.category %}
+                <span class="badge bg-secondary">{{ post.category.name }}</span>
+              {% endif %}
+              {% for tag in post.tags.all %}
+                <span class="badge bg-info text-dark">{{ tag.name }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <form method="post" class="d-flex gap-2">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash"></i> Yes, Delete Post
+          </button>
+          <a href="{{ post.get_absolute_url }}" class="btn btn-secondary">
+            Cancel
+          </a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

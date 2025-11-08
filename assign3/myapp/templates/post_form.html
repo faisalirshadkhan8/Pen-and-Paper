@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}{% if mode == 'edit' %}Edit{% else %}New{% endif %} Post{% endblock %}
+{% block content %}
+    <main class="container py-4">
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">{% if mode == 'edit' %}Edit{% else %}Create{% endif %} Post</h5>
+              {% if mode == 'edit' and post %}
+                <a class="btn btn-sm btn-outline-danger" href="{% url 'post-delete' post.slug %}">Delete</a>
+              {% endif %}
+            </div>
+            <div class="card-body">
+              {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+              {% endif %}
+
+              <form method="post" enctype="multipart/form-data" class="vstack gap-3">
+                {% csrf_token %}
+
+                <div>
+                  <label class="form-label">Title</label>
+                  <input type="text" name="title" class="form-control" required
+                         value="{% if mode == 'edit' and post %}{{ post.title }}{% endif %}" />
+                </div>
+
+                <div>
+                  <label class="form-label">Content</label>
+                  <textarea name="content" class="form-control" rows="10" required>{% if mode == 'edit' and post %}{{ post.content }}{% endif %}</textarea>
+                </div>
+
+                <div>
+                  <label class="form-label">Category</label>
+                  <select name="category" class="form-select">
+                    <option value="">-- None --</option>
+                    {% for c in categories %}
+                      <option value="{{ c.slug }}" {% if mode == 'edit' and post and post.category and post.category.id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div>
+                  <label class="form-label">Tags</label>
+                  <select name="tags" class="form-select" multiple size="5">
+                    {% for t in tags %}
+                      <option value="{{ t.slug }}" {% if mode == 'edit' and post and t in post.tags.all %}selected{% endif %}>{{ t.name }}</option>
+                    {% endfor %}
+                  </select>
+                  <div class="form-text">Hold Ctrl (Windows) to select multiple.</div>
+                </div>
+
+                <div>
+                  <label class="form-label">Status</label>
+                  <select name="status" class="form-select">
+                    <option value="draft" {% if mode == 'edit' and post and post.status == 'draft' %}selected{% endif %}>Draft</option>
+                    <option value="published" {% if mode == 'edit' and post and post.status == 'published' %}selected{% endif %}>Published</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="form-label">Image</label>
+                  <input type="file" name="image" class="form-control" accept="image/*" />
+                  {% if mode == 'edit' and post and post.image %}
+                    <div class="mt-2">
+                      <img src="{{ post.image.url }}" alt="Current image" class="img-fluid rounded border" style="max-height: 200px;" />
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="d-flex gap-2">
+                  <button type="submit" class="btn btn-primary">Save</button>
+                  <a href="{% if mode == 'edit' and post %}{{ post.get_absolute_url }}{% else %}{% url 'post-list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+{% endblock %}
