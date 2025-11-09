@@ -38,8 +38,13 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-insecure-key-change-me')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
-CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if os.environ.get('CSRF_TRUSTED_ORIGINS') else []
+def _csv_env(name: str, default: str = ""):
+    raw = os.environ.get(name, default)
+    return [item.strip().strip('\'"') for item in raw.split(',') if item.strip()]
+
+# Tolerate accidental quotes/spaces in env vars (works for both Railway Raw and UI editors)
+ALLOWED_HOSTS = _csv_env('ALLOWED_HOSTS', '127.0.0.1,localhost')
+CSRF_TRUSTED_ORIGINS = _csv_env('CSRF_TRUSTED_ORIGINS') if os.environ.get('CSRF_TRUSTED_ORIGINS') else []
 
 
 # Application definition
@@ -142,7 +147,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+# Use absolute STATIC_URL so asset URLs are rooted correctly behind proxies/CDNs
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -176,3 +182,4 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('EMAIL_HOST_USER', 'noreply@blog.com')
+EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '10'))  # Prevent long hangs on SMTP
