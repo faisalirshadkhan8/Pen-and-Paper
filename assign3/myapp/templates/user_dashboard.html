@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}My Dashboard{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+  <div class="container text-center">
+    <h1 class="display-4 fw-bold mb-3">
+      <i class="bi bi-person-circle"></i> My Dashboard
+    </h1>
+    <p class="lead">Manage your account and author status</p>
+  </div>
+</div>
+
+<div class="container my-5">
+  <div class="row">
+    <!-- User Info Card -->
+    <div class="col-md-4 mb-4">
+      <div class="card shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-person-circle" style="font-size: 4rem; color: #667eea;"></i>
+          <h4 class="mt-3">{{ user.username }}</h4>
+          <p class="text-muted">{{ user.email }}</p>
+          
+          {% if is_admin %}
+            <span class="badge bg-danger mb-2">
+              <i class="bi bi-shield-check"></i> Admin
+            </span>
+          {% elif is_author %}
+            <span class="badge bg-success mb-2">
+              <i class="bi bi-pencil-square"></i> Author
+            </span>
+          {% else %}
+            <span class="badge bg-info mb-2">
+              <i class="bi bi-book"></i> Reader
+            </span>
+          {% endif %}
+          
+          <hr>
+          
+          <div class="d-grid gap-2">
+            <a href="{% url 'home' %}" class="btn btn-outline-primary">
+              <i class="bi bi-house-door"></i> Home
+            </a>
+            {% if is_author %}
+              <a href="{% url 'dashboard' %}" class="btn btn-outline-success">
+                <i class="bi bi-speedometer2"></i> Author Dashboard
+              </a>
+              <a href="{% url 'post-create' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> New Post
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-8">
+      {% if is_author %}
+        <!-- Author Stats -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-graph-up"></i> Your Stats</h5>
+          </div>
+          <div class="card-body">
+            <div class="row text-center">
+              <div class="col-md-4">
+                <h2 class="text-primary">{{ post_count }}</h2>
+                <p class="text-muted">Total Posts</p>
+              </div>
+              <div class="col-md-4">
+                <h2 class="text-success">{{ published_count }}</h2>
+                <p class="text-muted">Published</p>
+              </div>
+              <div class="col-md-4">
+                <h2 class="text-warning">{{ draft_count }}</h2>
+                <p class="text-muted">Drafts</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <!-- Reader Status -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-info-circle"></i> Account Status</h5>
+          </div>
+          <div class="card-body">
+            <h5>You are currently a Reader</h5>
+            <p>Readers can view posts and leave comments. Want to create your own posts?</p>
+            
+            {% if latest_application %}
+              {% if latest_application.status == 'pending' %}
+                <div class="alert alert-warning">
+                  <i class="bi bi-clock-history"></i> <strong>Application Pending</strong>
+                  <p class="mb-0">Your author application is under review. We'll notify you once it's been processed.</p>
+                  <small class="text-muted">Submitted: {{ latest_application.created_at|date:"F d, Y" }}</small>
+                </div>
+              {% elif latest_application.status == 'approved' %}
+                <div class="alert alert-success">
+                  <i class="bi bi-check-circle"></i> <strong>Congratulations!</strong>
+                  <p class="mb-0">You've been approved as an author! Refresh the page to see your new permissions.</p>
+                </div>
+              {% elif latest_application.status == 'rejected' %}
+                <div class="alert alert-danger">
+                  <i class="bi bi-x-circle"></i> <strong>Application Not Approved</strong>
+                  <p class="mb-0">Your previous application was not approved. You can submit a new application if you'd like to try again.</p>
+                  <small class="text-muted">Reviewed: {{ latest_application.reviewed_at|date:"F d, Y" }}</small>
+                </div>
+                {% if can_apply %}
+                  <a href="{% url 'apply-author' %}" class="btn btn-primary mt-2">
+                    <i class="bi bi-pencil"></i> Apply Again
+                  </a>
+                {% endif %}
+              {% endif %}
+            {% else %}
+              <a href="{% url 'apply-author' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-pencil-square"></i> Apply to Become an Author
+              </a>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- What Authors Can Do -->
+        <div class="card shadow-sm">
+          <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-star"></i> Author Benefits</h5>
+          </div>
+          <div class="card-body">
+            <ul class="list-unstyled">
+              <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Create and publish blog posts</li>
+              <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Upload images with your posts</li>
+              <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Edit and delete your own posts</li>
+              <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Manage post categories and tags</li>
+              <li class="mb-2"><i class="bi bi-check-circle text-success"></i> Save drafts before publishing</li>
+            </ul>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

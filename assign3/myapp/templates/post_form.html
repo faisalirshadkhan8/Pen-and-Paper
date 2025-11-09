@@ -70,7 +70,7 @@
 
                 <div class="d-flex gap-2">
                   <button type="submit" class="btn btn-primary">Save</button>
-                  <a href="{% if mode == 'edit' and post %}{{ post.get_absolute_url }}{% else %}{% url 'post-list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+                  <a href="{% if mode == 'edit' and post %}{{ post.get_absolute_url }}{% else %}{% url 'home' %}{% endif %}" class="btn btn-secondary">Cancel</a>
                 </div>
               </form>
             </div>

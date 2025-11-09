@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+import warnings
 
 
 class MyappConfig(AppConfig):
@@ -13,11 +14,14 @@ class MyappConfig(AppConfig):
         from .models import Post, Comment
         
         # Auto-create roles if they don't exist
-        try:
-            self._create_default_groups()
-        except Exception:
-            # Skip during migrations or if database not ready
-            pass
+        # Suppress the database access warning - this is intentional
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=RuntimeWarning, message='.*database.*')
+            try:
+                self._create_default_groups()
+            except Exception:
+                # Skip during migrations or if database not ready
+                pass
 
     def _create_default_groups(self):
         """Create Admin, Author, Reader groups with permissions."""

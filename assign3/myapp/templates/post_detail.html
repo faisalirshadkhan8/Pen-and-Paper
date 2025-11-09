@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
-{% block title %}{{ post.title }}{% endblock %}
+{% block title %}{{ post.title }} - Pen & Paper{% endblock %}
 {% block content %}
+<div class="read-progress"></div>
 <div class="container">
   {% if post.status == 'draft' %}
     <div class="alert alert-warning">
@@ -10,10 +11,10 @@
   <article class="mb-4">
     <div class="d-flex justify-content-between align-items-start mb-3">
       <div>
-        <h1>{{ post.title }}</h1>
+        <h1 class="h2 fw-semibold">{{ post.title }}</h1>
         <p class="text-muted">By {{ post.author.username }} | {% if post.published_at %}{{ post.published_at|date:"M d, Y" }}{% else %}Draft{% endif %}</p>
       </div>
-      {% if user.is_authenticated and user == post.author or user.is_staff or user.is_superuser %}
+      {% if user.is_staff or user.is_superuser or user.is_authenticated and user == post.author %}
         <div class="btn-group">
           <a href="{% url 'post-edit' post.slug %}" class="btn btn-sm btn-outline-primary">Edit</a>
           <a href="{% url 'post-delete' post.slug %}" class="btn btn-sm btn-outline-danger">Delete</a>
@@ -21,10 +22,14 @@
       {% endif %}
     </div>
     {% if post.image %}
-      <img src="{{ post.image.url }}" alt="{{ post.title }}" class="img-fluid mb-3" />
+      <figure class="post-hero mb-4">
+        <img src="{{ post.image.url }}" alt="{{ post.title }}" class="post-feature-image" loading="lazy" />
+      </figure>
     {% endif %}
-    {% if post.category %}<span class="badge bg-secondary">{{ post.category.name }}</span>{% endif %}
-    {% for tg in post.tags.all %}<span class="badge bg-info text-dark">{{ tg.name }}</span>{% endfor %}
+    <div class="mb-2">
+      {% if post.category %}<span class="pill">{{ post.category.name }}</span>{% endif %}
+      {% for tg in post.tags.all %}<span class="pill">#{{ tg.name }}</span>{% endfor %}
+    </div>
     <div class="mt-3">{{ post.content|linebreaks }}</div>
   </article>
 

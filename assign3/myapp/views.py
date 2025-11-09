@@ -3,9 +3,14 @@ from django.shortcuts import render
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
-from django.views.generic import ListView, DetailView, View
+from django.views.generic import ListView, DetailView, View, CreateView, TemplateView
+from django.contrib import messages
+from django.urls import reverse_lazy
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib.auth.models import User
 
-from .models import Post, Comment, Category, Tag
+from .models import Post, Comment, Category, Tag, AuthorApplication
 
 
 class HomeView(LoginRequiredMixin, ListView):
@@ -202,7 +207,7 @@ class PostDeleteView(RoleRequiredMixin, LoginRequiredMixin, View):
 		u = request.user
 		if self.user_can_delete(post):
 			post.delete()
-			return redirect('post-list')
+			return redirect('dashboard')
 		return redirect(post.get_absolute_url())
 
 
@@ -217,4 +222,106 @@ class DashboardView(RoleRequiredMixin, LoginRequiredMixin, ListView):
 		if u.is_superuser or u.is_staff:
 			return base.order_by('-created_at')
 		return base.filter(author=u).order_by('-created_at')
+
+
+class UserDashboardView(LoginRequiredMixin, TemplateView):
+	"""Dashboard for all users showing their role and application status"""
+	template_name = 'user_dashboard.html'
+	login_url = '/accounts/login/'
+	
+	def get_context_data(self, **kwargs):
+		ctx = super().get_context_data(**kwargs)
+		user = self.request.user
+		
+		# Get user's groups
+		user_groups = user.groups.all()
+		ctx['user_groups'] = user_groups
+		
+		# Check if user is Author or Admin
+		ctx['is_author'] = user.groups.filter(name__in=['Author', 'Admin']).exists() or user.is_staff or user.is_superuser
+		ctx['is_admin'] = user.groups.filter(name='Admin').exists() or user.is_superuser
+		
+		# Get user's latest application
+		latest_application = AuthorApplication.objects.filter(user=user).order_by('-created_at').first()
+		ctx['latest_application'] = latest_application
+		
+		# Check if user can apply (no pending application)
+		ctx['can_apply'] = not latest_application or latest_application.status != AuthorApplication.PENDING
+		
+		# Get user's post count if they're an author
+		if ctx['is_author']:
+			ctx['post_count'] = Post.objects.filter(author=user).count()
+			ctx['published_count'] = Post.objects.filter(author=user, status=Post.PUBLISHED).count()
+			ctx['draft_count'] = Post.objects.filter(author=user, status=Post.DRAFT).count()
+		
+		return ctx
+
+
+class ApplyAuthorView(LoginRequiredMixin, CreateView):
+	"""View for users to apply to become authors"""
+	model = AuthorApplication
+	template_name = 'apply_author.html'
+	fields = ['reason']
+	success_url = reverse_lazy('user-dashboard')
+	login_url = '/accounts/login/'
+	
+	def dispatch(self, request, *args, **kwargs):
+		# Check if user is already an author
+		if request.user.groups.filter(name__in=['Author', 'Admin']).exists() or request.user.is_staff:
+			messages.info(request, 'You are already an author!')
+			return redirect('user-dashboard')
+		
+		# Check if user has a pending application
+		pending = AuthorApplication.objects.filter(
+			user=request.user, 
+			status=AuthorApplication.PENDING
+		).exists()
+		
+		if pending:
+			messages.warning(request, 'You already have a pending application.')
+			return redirect('user-dashboard')
+		
+		return super().dispatch(request, *args, **kwargs)
+	
+	def form_valid(self, form):
+		form.instance.user = self.request.user
+		form.instance.status = AuthorApplication.PENDING
+		
+		response = super().form_valid(form)
+		
+		messages.success(
+			self.request, 
+			'Your application has been submitted! We\'ll review it soon.'
+		)
+		
+		# Send notification email to admins
+		try:
+			admin_users = User.objects.filter(
+				Q(is_superuser=True) | Q(groups__name='Admin')
+			).distinct()
+			
+			admin_emails = [u.email for u in admin_users if u.email]
+			
+			if admin_emails:
+				send_mail(
+					subject=f'New Author Application from {self.request.user.username}',
+					message=f'''A new author application has been submitted.
+
+User: {self.request.user.username}
+Email: {self.request.user.email}
+Reason: {form.instance.reason}
+
+Review it in the admin panel: {self.request.build_absolute_uri('/admin/myapp/authorapplication/')}
+
+Best regards,
+Blog System''',
+					from_email=settings.DEFAULT_FROM_EMAIL,
+					recipient_list=admin_emails,
+					fail_silently=True,
+				)
+		except Exception as e:
+			pass  # Continue even if email fails
+		
+		return response
+
 
