@@ -7,6 +7,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth.models import User
+from threading import Thread
 
 from .forms import RegistrationForm
 from myapp.models import UserProfile
@@ -39,10 +40,12 @@ class RegisterView(FormView):
             f'/accounts/verify/{profile.verification_token}/'
         )
         
-        try:
-            send_mail(
-                subject='Verify Your Email - Blog Platform',
-                message=f'''Hi {user.username},
+        # Send verification email asynchronously to avoid request timeouts in production
+        def _send_verification():
+            try:
+                send_mail(
+                    subject='Verify Your Email - Blog Platform',
+                    message=f'''Hi {user.username},
 
 Welcome to our Blog Platform! Please verify your email address to activate your account.
 
@@ -53,20 +56,20 @@ If you didn't create this account, please ignore this email.
 
 Best regards,
 The Blog Team''',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
-            messages.success(
-                self.request, 
-                f'Account created! Please check your email ({user.email}) to verify your account.'
-            )
-        except Exception as e:
-            # If email fails, still show success but log error
-            messages.warning(
-                self.request,
-                'Account created but verification email failed to send. Please contact support.'
-            )
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    fail_silently=True,
+                )
+            except Exception:
+                # Silently ignore; user can use resend flow
+                pass
+
+        Thread(target=_send_verification, daemon=True).start()
+
+        messages.success(
+            self.request,
+            f'Account created! Please check your email ({user.email}) to verify your account.'
+        )
         
         return super().form_valid(form)
 
@@ -106,10 +109,11 @@ class VerifyEmailView(View):
             user.save()
             
             # Send success email
-            try:
-                send_mail(
-                    subject='Email Verified Successfully!',
-                    message=f'''Hi {user.username},
+            def _send_verified():
+                try:
+                    send_mail(
+                        subject='Email Verified Successfully!',
+                        message=f'''Hi {user.username},
 
 Your email has been verified successfully! Your account is now active.
 
@@ -118,12 +122,14 @@ You can now login and start using our blog platform:
 
 Best regards,
 The Blog Team''',
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    fail_silently=True,
-                )
-            except:
-                pass  # Don't fail if confirmation email doesn't send
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[user.email],
+                        fail_silently=True,
+                    )
+                except Exception:
+                    pass
+
+            Thread(target=_send_verified, daemon=True).start()
             
             messages.success(
                 request,
@@ -163,19 +169,25 @@ class ResendVerificationView(TemplateView):
                 f'/accounts/verify/{profile.verification_token}/'
             )
             
-            send_mail(
-                subject='Verify Your Email - Blog Platform',
-                message=f'''Hi {user.username},
+            def _send_resend():
+                try:
+                    send_mail(
+                        subject='Verify Your Email - Blog Platform',
+                        message=f'''Hi {user.username},
 
 Here is your new verification link (expires in 1 hour):
 {verification_url}
 
 Best regards,
 The Blog Team''',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[user.email],
+                        fail_silently=True,
+                    )
+                except Exception:
+                    pass
+
+            Thread(target=_send_resend, daemon=True).start()
             
             messages.success(
                 request,
